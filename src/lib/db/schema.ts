@@ -61,3 +61,10 @@ export const puzzleAttempts = pgTable(
     index("idx_attempts_solved").on(table.puzzleId, table.solved),
   ]
 );
+
+export const subscribers = pgTable("subscribers", {
+  id: serial("id").primaryKey(),
+  email: varchar("email", { length: 255 }).notNull().unique(),
+  subscribedAt: timestamp("subscribed_at").defaultNow().notNull(),
+  sessionId: varchar("session_id", { length: 50 }),
+});

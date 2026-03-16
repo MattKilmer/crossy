@@ -1,5 +1,5 @@
 import { db } from "@/lib/db";
-import { puzzles, puzzleAttempts } from "@/lib/db/schema";
+import { puzzles, puzzleAttempts, subscribers } from "@/lib/db/schema";
 import { desc, sql, eq } from "drizzle-orm";
 import type { ClueData } from "@/lib/solver/types";
 
@@ -37,6 +37,12 @@ export default async function AdminPage() {
     .groupBy(puzzles.topic)
     .orderBy(desc(sql`count(*)`))
     .limit(20);
+
+  // Subscribers
+  const allSubscribers = await db
+    .select()
+    .from(subscribers)
+    .orderBy(desc(subscribers.subscribedAt));
 
   // All puzzles with details
   const allPuzzles = await db
@@ -111,7 +117,61 @@ export default async function AdminPage() {
               : "—"
           }
         />
+        <StatCard label="Subscribers" value={allSubscribers.length} />
       </div>
+
+      {/* Subscribers */}
+      <section className="mb-8">
+        <div className="flex items-center justify-between mb-3">
+          <h2 className="font-serif text-xl text-crossy-ink">
+            Subscribers ({allSubscribers.length})
+          </h2>
+          {allSubscribers.length > 0 && (
+            <a
+              href="/api/admin/subscribers?format=csv"
+              className="text-sm text-crossy-gold hover:underline font-sans font-medium"
+            >
+              Export CSV
+            </a>
+          )}
+        </div>
+        <div className="bg-white rounded-lg border border-crossy-ink/10 overflow-hidden">
+          <table className="w-full text-sm">
+            <thead className="bg-crossy-ink/5">
+              <tr>
+                <th className="text-left px-4 py-2 font-medium text-crossy-ink/60">
+                  Email
+                </th>
+                <th className="text-right px-4 py-2 font-medium text-crossy-ink/60">
+                  Subscribed
+                </th>
+              </tr>
+            </thead>
+            <tbody>
+              {allSubscribers.map((s) => (
+                <tr key={s.id} className="border-t border-crossy-ink/5">
+                  <td className="px-4 py-2 text-crossy-ink font-mono text-xs">
+                    {s.email}
+                  </td>
+                  <td className="px-4 py-2 text-right text-crossy-ink/50 text-xs">
+                    {s.subscribedAt.toLocaleString()}
+                  </td>
+                </tr>
+              ))}
+              {allSubscribers.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={2}
+                    className="px-4 py-6 text-center text-crossy-ink/40"
+                  >
+                    No subscribers yet
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </section>
 
       {/* Topic breakdown */}
       <section className="mb-8">

@@ -210,22 +210,22 @@ function EmailCapture() {
     ) : null;
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!email.includes("@")) return;
 
-    // Store locally for now — hook up to email service later
     try {
-      const existing = JSON.parse(
-        localStorage.getItem("crossy_emails") || "[]"
-      );
-      existing.push({ email, at: new Date().toISOString() });
-      localStorage.setItem("crossy_emails", JSON.stringify(existing));
+      const sid = localStorage.getItem("crossy_sid") ?? undefined;
+      await fetch("/api/subscribe", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, sessionId: sid }),
+      });
       localStorage.setItem("crossy_email_subscribed", "true");
     } catch {}
 
     setSubmitted(true);
-    toast.success("You're on the list!");
+    toast.success("You\u2019re on the list!");
   };
 
   return (
