@@ -2,7 +2,17 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import type { RecentPuzzle } from "@/lib/types";
+
+interface RecentPuzzle {
+  id: string;
+  topic: string;
+  difficulty: string;
+  playCount: number;
+  solveCount: number;
+  bestTime: number | null;
+  template: string[][];
+  createdAt: string;
+}
 
 export function RecentPuzzles() {
   const [puzzles, setPuzzles] = useState<RecentPuzzle[]>([]);
@@ -22,77 +32,77 @@ export function RecentPuzzles() {
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  const timeAgo = (dateStr: string) => {
-    const diff = Date.now() - new Date(dateStr).getTime();
-    const mins = Math.floor(diff / 60000);
-    if (mins < 1) return "just now";
-    if (mins < 60) return `${mins}m ago`;
-    const hours = Math.floor(mins / 60);
-    if (hours < 24) return `${hours}h ago`;
-    const days = Math.floor(hours / 24);
-    return `${days}d ago`;
-  };
-
   if (loading || puzzles.length === 0) return null;
 
   return (
-    <div className="w-full max-w-md mt-8">
-      <h2 className="font-serif text-lg text-crossy-ink/70 mb-3 text-center">
-        Recent Puzzles
-      </h2>
-      <div className="space-y-2">
+    <div className="w-full max-w-lg mt-12">
+      <div className="flex items-center gap-3 mb-4">
+        <div className="h-px flex-1 bg-crossy-ink/10" />
+        <h2 className="font-sans text-xs font-medium uppercase tracking-widest text-crossy-ink/35">
+          or play a puzzle
+        </h2>
+        <div className="h-px flex-1 bg-crossy-ink/10" />
+      </div>
+
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {puzzles.map((p) => (
           <Link
             key={p.id}
             href={`/puzzle/${p.id}`}
-            className="flex items-center justify-between px-4 py-3 bg-white rounded-lg border border-crossy-ink/8 hover:border-crossy-ink/20 transition-colors group"
+            className="group flex flex-col items-center gap-2 p-3 bg-white rounded-lg border border-crossy-ink/8 hover:border-crossy-gold/40 hover:shadow-sm transition-all"
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <div className="min-w-0">
-                <p className="font-sans text-sm font-medium text-crossy-ink truncate group-hover:text-crossy-gold transition-colors">
-                  {p.topic}
-                </p>
-                <p className="font-sans text-xs text-crossy-ink/40">
-                  {p.difficulty} · {timeAgo(p.createdAt)}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-4 shrink-0">
-              {p.bestTime && (
-                <div className="text-right">
-                  <p className="font-mono text-xs text-crossy-gold font-medium">
-                    {formatTime(p.bestTime)}
-                  </p>
-                  <p className="font-sans text-[10px] text-crossy-ink/30">
-                    best
-                  </p>
-                </div>
+            {/* Mini grid preview */}
+            <MiniGrid template={p.template} />
+
+            {/* Topic */}
+            <p className="font-sans text-xs font-medium text-crossy-ink text-center leading-tight group-hover:text-crossy-gold transition-colors line-clamp-2">
+              {p.topic}
+            </p>
+
+            {/* Stats */}
+            <div className="flex items-center gap-2 text-[10px] text-crossy-ink/35 font-sans">
+              {p.bestTime ? (
+                <span className="text-crossy-gold/70 font-medium">
+                  {formatTime(p.bestTime)}
+                </span>
+              ) : null}
+              {p.solveCount > 0 && (
+                <span>
+                  {p.solveCount} solve{p.solveCount !== 1 ? "s" : ""}
+                </span>
               )}
-              <div className="text-right">
-                <p className="font-sans text-xs text-crossy-ink/50 tabular-nums">
-                  {p.solveCount}/{p.playCount}
-                </p>
-                <p className="font-sans text-[10px] text-crossy-ink/30">
-                  solved
-                </p>
-              </div>
-              <svg
-                className="w-4 h-4 text-crossy-ink/20 group-hover:text-crossy-ink/40 transition-colors"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-                strokeWidth={2}
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M9 5l7 7-7 7"
-                />
-              </svg>
+              {p.solveCount === 0 && !p.bestTime && (
+                <span className="text-crossy-gold/60 font-medium">New</span>
+              )}
             </div>
           </Link>
         ))}
       </div>
+    </div>
+  );
+}
+
+function MiniGrid({ template }: { template: string[][] }) {
+  const size = template.length;
+  return (
+    <div
+      className="inline-grid border border-crossy-ink/40"
+      style={{
+        gridTemplateColumns: `repeat(${size}, 1fr)`,
+        width: "40px",
+        height: "40px",
+      }}
+    >
+      {template.flat().map((cell, i) => (
+        <div
+          key={i}
+          className={
+            cell === "#"
+              ? "bg-crossy-ink"
+              : "bg-white border-[0.5px] border-crossy-ink/15"
+          }
+        />
+      ))}
     </div>
   );
 }

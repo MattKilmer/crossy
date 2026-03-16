@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { puzzles, puzzleAttempts } from "@/lib/db/schema";
-import { desc, sql, eq } from "drizzle-orm";
+import { desc, sql } from "drizzle-orm";
 
 export async function GET() {
   const recentPuzzles = await db
@@ -11,13 +11,13 @@ export async function GET() {
       difficulty: puzzles.difficulty,
       playCount: puzzles.playCount,
       solveCount: puzzles.solveCount,
+      grid: puzzles.grid,
       createdAt: puzzles.createdAt,
     })
     .from(puzzles)
     .orderBy(desc(puzzles.createdAt))
-    .limit(10);
+    .limit(8);
 
-  // Get best time for each puzzle
   const results = await Promise.all(
     recentPuzzles.map(async (p) => {
       const best = await db
@@ -29,6 +29,11 @@ export async function GET() {
           sql`${puzzleAttempts.puzzleId} = ${p.id} AND ${puzzleAttempts.solved} = true AND ${puzzleAttempts.solveTimeSec} IS NOT NULL`
         );
 
+      // Build template (black/white pattern only, no letters)
+      const template = (p.grid as string[][]).map((row) =>
+        row.map((c) => (c === "#" ? "#" : "."))
+      );
+
       return {
         id: p.id,
         topic: p.topic,
@@ -36,6 +41,7 @@ export async function GET() {
         playCount: p.playCount,
         solveCount: p.solveCount,
         bestTime: best[0]?.bestTime ?? null,
+        template,
         createdAt: p.createdAt.toISOString(),
       };
     })
