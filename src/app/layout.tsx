@@ -16,13 +16,31 @@ const sans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Crossy — AI Mini Crosswords on Any Topic",
+  title: "Crossy — Mini Crosswords on Any Topic",
   description:
-    "Generate and play beautiful mini crosswords about anything. Powered by AI, built for sharing.",
+    "Generate and play mini crosswords about anything. Pick a topic, solve the puzzle, challenge your friends.",
+  metadataBase: new URL("https://crossygame.app"),
   openGraph: {
-    title: "Crossy — AI Mini Crosswords on Any Topic",
-    description: "Generate and play beautiful mini crosswords about anything.",
+    title: "Crossy — Mini Crosswords on Any Topic",
+    description:
+      "Pick any topic. Get a crossword. Challenge your friends. Jazz, Space, Cooking, Sports — you name it.",
     type: "website",
+    siteName: "Crossy",
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "Crossy — Mini crosswords on any topic",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Crossy — Mini Crosswords on Any Topic",
+    description:
+      "Pick any topic. Get a crossword. Challenge your friends.",
+    images: ["/opengraph-image"],
   },
 };
 
