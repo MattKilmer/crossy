@@ -9,7 +9,7 @@ export default function Home() {
           Crossy
         </h1>
         <p className="font-sans text-crossy-ink/50 text-center text-sm sm:text-base max-w-xs">
-          AI-powered mini crosswords on any topic. Generate, play, share.
+          Mini crosswords on any topic. Generate, play, share.
         </p>
         <div className="w-12 h-0.5 bg-crossy-gold/40 mt-2" />
       </div>
