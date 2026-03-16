@@ -276,11 +276,14 @@ export function CrosswordGrid({
                   ref={(el) => {
                     inputRefs.current[r][c] = el;
                   }}
-                  className="crossword-cell-input absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                  className="crossword-cell-input absolute inset-0 w-full h-full cursor-pointer text-transparent caret-transparent bg-transparent"
+                  style={{ fontSize: "16px", WebkitTextFillColor: "transparent" }}
                   type="text"
-                  inputMode="none"
+                  inputMode="text"
+                  enterKeyHint="next"
                   autoComplete="off"
                   autoCorrect="off"
+                  autoCapitalize="characters"
                   spellCheck={false}
                   maxLength={2}
                   tabIndex={isBlack ? -1 : 0}
