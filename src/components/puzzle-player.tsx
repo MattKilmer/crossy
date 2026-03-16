@@ -5,9 +5,20 @@ import { CrosswordGrid, type GridSlot } from "./crossword-grid";
 import { ClueList } from "./clue-list";
 import { CompletionScreen } from "./completion-screen";
 import { ShareDialog } from "./share-dialog";
+import { Leaderboard } from "./leaderboard";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import type { PuzzleResponse, PuzzleClue, CheckAnswersResponse } from "@/lib/types";
+
+function getSessionId(): string {
+  if (typeof window === "undefined") return "";
+  let sid = localStorage.getItem("crossy_sid");
+  if (!sid) {
+    sid = crypto.randomUUID();
+    localStorage.setItem("crossy_sid", sid);
+  }
+  return sid;
+}
 
 interface PuzzlePlayerProps {
   puzzle: PuzzleResponse;
@@ -80,7 +91,10 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
   const [solved, setSolved] = useState(false);
   const [showShare, setShowShare] = useState(false);
   const [incorrect, setIncorrect] = useState(false);
+  const [rank, setRank] = useState<number | null>(null);
+  const [totalSolvers, setTotalSolvers] = useState(0);
   const checkingRef = useRef(false);
+  const sessionId = useMemo(() => getSessionId(), []);
 
   // Timer
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -281,12 +295,15 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
       body: JSON.stringify({
         answers: values,
         solveTimeSec: elapsedSec,
+        sessionId,
       }),
     })
       .then((res) => res.json())
       .then((data: CheckAnswersResponse) => {
         if (data.solved) {
           setSolved(true);
+          setRank(data.rank ?? null);
+          setTotalSolvers(data.totalSolvers ?? 0);
           if (timerRef.current) clearInterval(timerRef.current);
         } else {
           setIncorrect(true);
@@ -311,6 +328,8 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
         <CompletionScreen
           puzzle={puzzle}
           time={elapsedSec}
+          rank={rank}
+          totalSolvers={totalSolvers}
           onShare={() => setShowShare(true)}
           onNewPuzzle={() => (window.location.href = "/")}
         />
@@ -394,6 +413,9 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
         activeDirection={activeDirection}
         onClueClick={handleClueClick}
       />
+
+      {/* Leaderboard */}
+      <Leaderboard puzzleId={puzzle.id} sessionId={sessionId} />
     </div>
   );
 }

@@ -9,8 +9,8 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const body = (await request.json()) as CheckAnswersRequest;
-  const { answers, solveTimeSec } = body;
+  const body = (await request.json()) as CheckAnswersRequest & { sessionId?: string };
+  const { answers, solveTimeSec, sessionId } = body;
 
   const result = await db
     .select()
@@ -62,6 +62,7 @@ export async function POST(
     solveTimeSec: solveTimeSec ?? null,
     solved,
     errorCount: errors,
+    sessionId: sessionId ?? null,
   });
 
   // Update puzzle stats if solved
@@ -72,13 +73,34 @@ export async function POST(
       .where(eq(puzzles.id, id));
   }
 
+  // Get leaderboard rank if solved
+  let rank: number | null = null;
+  let totalSolvers = 0;
+  if (solved && solveTimeSec) {
+    const fasterCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(puzzleAttempts)
+      .where(
+        sql`${puzzleAttempts.puzzleId} = ${id} AND ${puzzleAttempts.solved} = true AND ${puzzleAttempts.solveTimeSec} < ${solveTimeSec}`
+      );
+    rank = (fasterCount[0]?.count ?? 0) + 1;
+
+    const totalCount = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(puzzleAttempts)
+      .where(
+        sql`${puzzleAttempts.puzzleId} = ${id} AND ${puzzleAttempts.solved} = true`
+      );
+    totalSolvers = totalCount[0]?.count ?? 0;
+  }
+
   const response: CheckAnswersResponse = {
     solved,
     correct,
     total,
     errors,
     cellResults,
-    ...(solved ? { solution: solutionGrid } : {}),
+    ...(solved ? { solution: solutionGrid, rank, totalSolvers } : {}),
   };
 
   return NextResponse.json(response);

@@ -38,4 +38,22 @@ export interface CheckAnswersResponse {
   errors: number;
   cellResults: ("correct" | "incorrect" | "black" | "empty")[][];
   solution?: string[][];
+  rank?: number | null;
+  totalSolvers?: number;
+}
+
+export interface LeaderboardEntry {
+  rank: number;
+  solveTimeSec: number;
+  isYou?: boolean;
+}
+
+export interface RecentPuzzle {
+  id: string;
+  topic: string;
+  difficulty: string;
+  playCount: number;
+  solveCount: number;
+  bestTime: number | null;
+  createdAt: string;
 }

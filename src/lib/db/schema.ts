@@ -54,6 +54,10 @@ export const puzzleAttempts = pgTable(
     solveTimeSec: integer("solve_time_sec"),
     solved: boolean("solved").default(false).notNull(),
     errorCount: integer("error_count").default(0),
+    sessionId: varchar("session_id", { length: 50 }),
   },
-  (table) => [index("idx_attempts_puzzle_id").on(table.puzzleId)]
+  (table) => [
+    index("idx_attempts_puzzle_id").on(table.puzzleId),
+    index("idx_attempts_solved").on(table.puzzleId, table.solved),
+  ]
 );
