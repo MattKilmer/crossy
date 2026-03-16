@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useMemo } from "react";
 import { Button } from "@/components/ui/button";
+import { toast } from "sonner";
 import type { PuzzleResponse } from "@/lib/types";
 
 interface CompletionScreenProps {
@@ -186,6 +187,71 @@ export function CompletionScreen({
           New Puzzle
         </Button>
       </div>
+
+      {/* Email capture */}
+      <EmailCapture />
     </div>
+  );
+}
+
+function EmailCapture() {
+  const [email, setEmail] = useState("");
+  const [submitted, setSubmitted] = useState(false);
+  const [alreadySubscribed] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem("crossy_email_subscribed") === "true";
+  });
+
+  if (alreadySubscribed || submitted) {
+    return submitted ? (
+      <p className="font-sans text-xs text-crossy-gold text-center mt-2">
+        You&apos;re on the list!
+      </p>
+    ) : null;
+  }
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!email.includes("@")) return;
+
+    // Store locally for now — hook up to email service later
+    try {
+      const existing = JSON.parse(
+        localStorage.getItem("crossy_emails") || "[]"
+      );
+      existing.push({ email, at: new Date().toISOString() });
+      localStorage.setItem("crossy_emails", JSON.stringify(existing));
+      localStorage.setItem("crossy_email_subscribed", "true");
+    } catch {}
+
+    setSubmitted(true);
+    toast.success("You're on the list!");
+  };
+
+  return (
+    <form
+      onSubmit={handleSubmit}
+      className="w-full max-w-xs mt-2 opacity-80 hover:opacity-100 transition-opacity"
+    >
+      <p className="font-sans text-xs text-crossy-ink/40 text-center mb-2">
+        Get a weekly puzzle in your inbox
+      </p>
+      <div className="flex gap-1.5">
+        <input
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="your@email.com"
+          className="flex-1 px-3 py-2 rounded-lg border border-crossy-ink/10 bg-white font-sans text-sm text-crossy-ink placeholder:text-crossy-ink/25 focus:outline-none focus:border-crossy-gold/40"
+          style={{ fontSize: "16px" }}
+        />
+        <button
+          type="submit"
+          className="px-3 py-2 rounded-lg bg-crossy-gold/15 text-crossy-gold font-sans text-xs font-semibold hover:bg-crossy-gold/25 transition-colors border border-crossy-gold/20"
+        >
+          Subscribe
+        </button>
+      </div>
+    </form>
   );
 }

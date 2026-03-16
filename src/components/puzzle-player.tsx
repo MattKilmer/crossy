@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useCallback, useEffect, useRef, useMemo } from "react";
+import Link from "next/link";
 import { CrosswordGrid, type GridSlot } from "./crossword-grid";
 import { ClueList } from "./clue-list";
 import { CompletionScreen } from "./completion-screen";
@@ -18,6 +19,41 @@ function getSessionId(): string {
     localStorage.setItem("crossy_sid", sid);
   }
   return sid;
+}
+
+const STORAGE_KEY_PREFIX = "crossy_progress_";
+
+function saveProgress(puzzleId: string, values: string[][], elapsedSec: number) {
+  try {
+    localStorage.setItem(
+      STORAGE_KEY_PREFIX + puzzleId,
+      JSON.stringify({ values, elapsedSec, savedAt: Date.now() })
+    );
+  } catch {}
+}
+
+function loadProgress(
+  puzzleId: string
+): { values: string[][]; elapsedSec: number } | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY_PREFIX + puzzleId);
+    if (!raw) return null;
+    const data = JSON.parse(raw);
+    // Expire after 24 hours
+    if (Date.now() - data.savedAt > 24 * 60 * 60 * 1000) {
+      localStorage.removeItem(STORAGE_KEY_PREFIX + puzzleId);
+      return null;
+    }
+    return { values: data.values, elapsedSec: data.elapsedSec };
+  } catch {
+    return null;
+  }
+}
+
+function clearProgress(puzzleId: string) {
+  try {
+    localStorage.removeItem(STORAGE_KEY_PREFIX + puzzleId);
+  } catch {}
 }
 
 interface PuzzlePlayerProps {
@@ -80,8 +116,11 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
     return { slots, clueNumbers };
   }, [template, size]);
 
-  // Player state
+  // Restore saved progress or start fresh
+  const savedProgress = useMemo(() => loadProgress(puzzle.id), [puzzle.id]);
+
   const [values, setValues] = useState<string[][]>(() =>
+    savedProgress?.values ??
     Array.from({ length: size }, () => Array(size).fill(""))
   );
   const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
@@ -93,12 +132,18 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
   const [incorrect, setIncorrect] = useState(false);
   const [rank, setRank] = useState<number | null>(null);
   const [totalSolvers, setTotalSolvers] = useState(0);
+  const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const checkingRef = useRef(false);
   const sessionId = useMemo(() => getSessionId(), []);
 
-  // Timer
-  const [elapsedSec, setElapsedSec] = useState(0);
+  // Timer (restore from saved progress)
+  const [elapsedSec, setElapsedSec] = useState(savedProgress?.elapsedSec ?? 0);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Check if puzzle has any progress
+  const hasProgress = useMemo(() => {
+    return values.some((row) => row.some((cell) => cell !== ""));
+  }, [values]);
 
   useEffect(() => {
     if (!solved) {
@@ -110,6 +155,25 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
       if (timerRef.current) clearInterval(timerRef.current);
     };
   }, [solved]);
+
+  // Auto-save progress on every change
+  useEffect(() => {
+    if (!solved && hasProgress) {
+      saveProgress(puzzle.id, values, elapsedSec);
+    }
+  }, [values, elapsedSec, solved, hasProgress, puzzle.id]);
+
+  // beforeunload warning when puzzle is in progress
+  useEffect(() => {
+    if (solved || !hasProgress) return;
+
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+    };
+
+    window.addEventListener("beforeunload", handler);
+    return () => window.removeEventListener("beforeunload", handler);
+  }, [solved, hasProgress]);
 
   // Auto-select first cell
   useEffect(() => {
@@ -136,7 +200,6 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
     return null;
   }, [activeCell, activeDirection, slots]);
 
-  // Find the current active slot
   const getActiveSlot = useCallback((): GridSlot | null => {
     if (!activeCell) return null;
     const [ar, ac] = activeCell;
@@ -156,18 +219,14 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
         next[row][col] = value;
         return next;
       });
-      // Clear incorrect message when user types
       if (incorrect) setIncorrect(false);
     },
     [incorrect]
   );
 
-  const handleCellFocus = useCallback(
-    (row: number, col: number) => {
-      setActiveCell([row, col]);
-    },
-    []
-  );
+  const handleCellFocus = useCallback((row: number, col: number) => {
+    setActiveCell([row, col]);
+  }, []);
 
   const handleDirectionToggle = useCallback(() => {
     setActiveDirection((d) => (d === "across" ? "down" : "across"));
@@ -207,12 +266,8 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
       let nr = r + dr;
       let nc = c + dc;
 
-      // Skip black cells
       while (
-        nr >= 0 &&
-        nr < size &&
-        nc >= 0 &&
-        nc < size &&
+        nr >= 0 && nr < size && nc >= 0 && nc < size &&
         template[nr][nc] === "#"
       ) {
         nr += dr;
@@ -221,7 +276,6 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
 
       if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
         setActiveCell([nr, nc]);
-        // Switch direction to match movement
         if (direction === "left" || direction === "right") {
           setActiveDirection("across");
         } else {
@@ -236,7 +290,6 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
     const currentSlot = getActiveSlot();
     if (!currentSlot) return;
 
-    // Find the next slot in the same direction, or wrap to other direction
     const sameDir = slots.filter((s) => s.direction === activeDirection);
     const idx = sameDir.findIndex((s) => s.number === currentSlot.number);
     let nextSlot: GridSlot;
@@ -244,7 +297,6 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
     if (idx < sameDir.length - 1) {
       nextSlot = sameDir[idx + 1];
     } else {
-      // Wrap to other direction
       const otherDir = activeDirection === "across" ? "down" : "across";
       const otherSlots = slots.filter((s) => s.direction === otherDir);
       nextSlot = otherSlots[0] || sameDir[0];
@@ -273,7 +325,6 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
   useEffect(() => {
     if (solved || checkingRef.current) return;
 
-    // Check if all cells are filled
     let allFilled = true;
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
@@ -304,17 +355,28 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
           setSolved(true);
           setRank(data.rank ?? null);
           setTotalSolvers(data.totalSolvers ?? 0);
+          clearProgress(puzzle.id);
           if (timerRef.current) clearInterval(timerRef.current);
         } else {
           setIncorrect(true);
-          toast.error("Not quite right — keep trying!");
+          toast.error("Not quite right \u2014 keep trying!");
         }
       })
       .catch(() => {})
       .finally(() => {
         checkingRef.current = false;
       });
-  }, [values, solved, size, template, puzzle.id, elapsedSec]);
+  }, [values, solved, size, template, puzzle.id, elapsedSec, sessionId]);
+
+  const handleLogoClick = useCallback(
+    (e: React.MouseEvent) => {
+      if (hasProgress && !solved) {
+        e.preventDefault();
+        setShowLeaveConfirm(true);
+      }
+    },
+    [hasProgress, solved]
+  );
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -348,9 +410,13 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
       {/* Header */}
       <div className="flex items-center justify-between w-full">
         <div className="flex items-center gap-2">
-          <h1 className="font-serif text-2xl tracking-tight text-crossy-ink">
+          <Link
+            href="/"
+            onClick={handleLogoClick}
+            className="font-serif text-2xl tracking-tight text-crossy-ink hover:text-crossy-gold transition-colors"
+          >
             Crossy
-          </h1>
+          </Link>
           <Badge
             variant="secondary"
             className="font-sans text-xs bg-crossy-gold/15 text-crossy-gold border-crossy-gold/30"
@@ -362,6 +428,34 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
           {formatTime(elapsedSec)}
         </div>
       </div>
+
+      {/* Leave confirmation modal */}
+      {showLeaveConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40">
+          <div className="bg-crossy-cream rounded-xl p-6 max-w-xs mx-4 shadow-lg border border-crossy-ink/10">
+            <h3 className="font-serif text-lg text-crossy-ink mb-2">
+              Leave puzzle?
+            </h3>
+            <p className="font-sans text-sm text-crossy-ink/60 mb-5">
+              Your progress is saved. You can come back to this puzzle anytime.
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setShowLeaveConfirm(false)}
+                className="flex-1 px-4 py-2 rounded-lg border border-crossy-ink/15 font-sans text-sm font-medium text-crossy-ink/70 hover:bg-crossy-ink/5 transition-colors"
+              >
+                Keep playing
+              </button>
+              <button
+                onClick={() => (window.location.href = "/")}
+                className="flex-1 px-4 py-2 rounded-lg bg-crossy-ink text-crossy-cream font-sans text-sm font-medium hover:bg-crossy-ink/90 transition-colors"
+              >
+                Leave
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Grid */}
       <CrosswordGrid
@@ -401,7 +495,7 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
       {/* Incorrect message */}
       {incorrect && (
         <p className="font-sans text-sm text-crossy-ink/50 text-center animate-in fade-in">
-          Something&apos;s not right — keep trying!
+          Something&apos;s not right &mdash; keep trying!
         </p>
       )}
 
