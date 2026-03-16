@@ -1,11 +1,10 @@
 import { PuzzleForm } from "@/components/puzzle-form";
-import { RecentPuzzles } from "@/components/recent-puzzles";
 
 export default function Home() {
   return (
-    <main className="min-h-screen flex flex-col items-center px-4 py-12 paper-texture">
+    <main className="min-h-screen flex flex-col items-center justify-center px-4 py-12 paper-texture">
       {/* Hero */}
-      <div className="flex flex-col items-center gap-2 mb-10 mt-8">
+      <div className="flex flex-col items-center gap-2 mb-10">
         <h1 className="font-serif text-5xl sm:text-6xl tracking-tight text-crossy-ink">
           Crossy
         </h1>
@@ -17,9 +16,6 @@ export default function Home() {
 
       {/* Form */}
       <PuzzleForm />
-
-      {/* Recent puzzles */}
-      <RecentPuzzles />
 
       {/* Footer */}
       <footer className="mt-16 text-center">

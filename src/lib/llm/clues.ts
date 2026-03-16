@@ -28,6 +28,31 @@ const DIFFICULTY_CLUE_GUIDE: Record<string, string> = {
 };
 
 /**
+ * Check if a clue contains the answer as a standalone word or obvious substring.
+ * More nuanced than simple includes — allows the answer to appear as part of
+ * a longer, unrelated word (e.g. "beBOP" in a clue about bebop is fine for answer "BOP"
+ * only if the clue doesn't give it away).
+ *
+ * We check: does the answer appear as a whole word (bounded by spaces/punctuation)?
+ */
+function clueContainsAnswer(clue: string, answer: string): boolean {
+  const upper = clue.toUpperCase();
+  const ans = answer.toUpperCase();
+
+  // Check whole word match using word boundaries
+  const regex = new RegExp(`\\b${ans.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}\\b`);
+  return regex.test(upper);
+}
+
+/**
+ * Generate a simple fallback clue for a word when the LLM clue is missing or invalid.
+ */
+function fallbackClue(answer: string): string {
+  const len = answer.length;
+  return `${len}-letter word`;
+}
+
+/**
  * Generate clues for a completed crossword grid using Claude Opus.
  */
 export async function generateClues(
@@ -57,9 +82,9 @@ Rules:
 - Each clue must uniquely and fairly identify its answer
 - Try to relate clues to the topic "${req.topic}" when possible, but if a word doesn't relate to the topic, write a good general clue instead
 - Keep clues concise (under 60 characters preferred, 80 max)
-- NEVER include the answer word (or an obvious anagram of it) in the clue
+- CRITICAL: The answer word must NOT appear as a standalone word in the clue. For example, if the answer is "BOP", do not write "Bebop style" — the word BOP is visible inside it. However, compound words where the answer is buried are okay.
 - Each clue should be solvable — no impossible references
-- Write exactly one clue per word
+- Write exactly one clue per word, do not skip any
 
 Respond in this exact JSON format only, no other text:
 {
@@ -81,42 +106,48 @@ Respond in this exact JSON format only, no other text:
     text.text
   );
 
+  // Build a map of received clues
+  const clueMap = new Map<string, string>();
+  for (const item of parsed.clues) {
+    const key = `${item.number}-${item.direction}`;
+    const clue = item.clue?.trim();
+    if (clue) {
+      clueMap.set(key, clue);
+    }
+  }
+
   const across: ClueData[] = [];
   const down: ClueData[] = [];
 
-  for (const item of parsed.clues) {
-    const wordEntry = req.words.find(
-      (w) => w.number === item.number && w.direction === item.direction
-    );
-    if (!wordEntry) continue;
+  // Ensure every word has a clue — use fallback if LLM missed one or clue is invalid
+  for (const word of req.words) {
+    const key = `${word.number}-${word.direction}`;
+    let clue = clueMap.get(key) ?? null;
 
-    // Validate: clue doesn't contain answer
-    const clue = item.clue.trim();
-    if (clue.toUpperCase().includes(wordEntry.answer.toUpperCase())) {
-      continue; // Skip clues that contain the answer
+    // Validate: reject if clue contains the answer as a whole word
+    if (clue && clueContainsAnswer(clue, word.answer)) {
+      clue = null; // will use fallback
+    }
+
+    // Use fallback if no valid clue
+    if (!clue) {
+      clue = fallbackClue(word.answer);
     }
 
     const clueData: ClueData = {
-      number: item.number,
+      number: word.number,
       clue,
-      answer: wordEntry.answer,
-      length: wordEntry.answer.length,
-      direction: wordEntry.direction as "across" | "down",
+      answer: word.answer,
+      length: word.answer.length,
+      direction: word.direction,
     };
 
-    if (item.direction === "across") across.push(clueData);
+    if (word.direction === "across") across.push(clueData);
     else down.push(clueData);
   }
 
   across.sort((a, b) => a.number - b.number);
   down.sort((a, b) => a.number - b.number);
-
-  // Verify we got clues for all words
-  if (across.length + down.length < req.words.length) {
-    console.warn(
-      `Warning: generated ${across.length + down.length} clues for ${req.words.length} words`
-    );
-  }
 
   return { across, down };
 }
