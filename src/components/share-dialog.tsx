@@ -15,7 +15,6 @@ interface ShareDialogProps {
   onOpenChange: (open: boolean) => void;
   puzzle: PuzzleResponse;
   time: number;
-  cellResults?: ("correct" | "incorrect" | "black" | "empty")[][] | null;
 }
 
 export function ShareDialog({
@@ -23,7 +22,6 @@ export function ShareDialog({
   onOpenChange,
   puzzle,
   time,
-  cellResults,
 }: ShareDialogProps) {
   const [copied, setCopied] = useState(false);
 
@@ -33,32 +31,21 @@ export function ShareDialog({
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Build emoji grid
-  const emojiGrid = cellResults
-    ? cellResults
-        .map((row) =>
-          row
-            .map((cell) => {
-              switch (cell) {
-                case "correct":
-                  return "\u2B1C"; // white square (all correct = clean look)
-                case "black":
-                  return "\u2B1B"; // black square
-                default:
-                  return "\u2B1C";
-              }
-            })
-            .join("")
-        )
-        .join("\n")
-    : "";
+  // Build emoji grid from template (just show shape, no answers)
+  const emojiGrid = puzzle.template
+    .map((row) =>
+      row
+        .map((cell) => (cell === "#" ? "\u2B1B" : "\u2B1C"))
+        .join("")
+    )
+    .join("\n");
 
   const puzzleUrl =
     typeof window !== "undefined"
-      ? `${window.location.origin}/puzzle/${puzzle.id}`
+      ? `${window.location.origin}/puzzle/${puzzle.id}?t=${time}`
       : "";
 
-  const shareText = `Crossy \u2014 ${puzzle.topic}\n${formatTime(time)}\n\n${emojiGrid}\n\nPlay it: ${puzzleUrl}`;
+  const shareText = `Crossy \u2014 ${puzzle.topic}\nI solved it in ${formatTime(time)}. Can you beat my time?\n\n${emojiGrid}\n\n${puzzleUrl}`;
 
   const handleCopy = async () => {
     try {
@@ -66,7 +53,6 @@ export function ShareDialog({
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      // Fallback for older browsers
       const textarea = document.createElement("textarea");
       textarea.value = shareText;
       document.body.appendChild(textarea);

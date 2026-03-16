@@ -5,8 +5,8 @@ import { CrosswordGrid, type GridSlot } from "./crossword-grid";
 import { ClueList } from "./clue-list";
 import { CompletionScreen } from "./completion-screen";
 import { ShareDialog } from "./share-dialog";
-import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import type { PuzzleResponse, PuzzleClue, CheckAnswersResponse } from "@/lib/types";
 
 interface PuzzlePlayerProps {
@@ -77,12 +77,10 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
   const [activeDirection, setActiveDirection] = useState<"across" | "down">(
     "across"
   );
-  const [cellResults, setCellResults] = useState<
-    ("correct" | "incorrect" | "black" | "empty")[][] | null
-  >(null);
   const [solved, setSolved] = useState(false);
-  const [checking, setChecking] = useState(false);
   const [showShare, setShowShare] = useState(false);
+  const [incorrect, setIncorrect] = useState(false);
+  const checkingRef = useRef(false);
 
   // Timer
   const [elapsedSec, setElapsedSec] = useState(0);
@@ -144,10 +142,10 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
         next[row][col] = value;
         return next;
       });
-      // Clear results when user types
-      if (cellResults) setCellResults(null);
+      // Clear incorrect message when user types
+      if (incorrect) setIncorrect(false);
     },
-    [cellResults]
+    [incorrect]
   );
 
   const handleCellFocus = useCallback(
@@ -257,40 +255,49 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
     [slots]
   );
 
-  const handleCheck = useCallback(async () => {
-    setChecking(true);
-    try {
-      const res = await fetch(`/api/puzzles/${puzzle.id}/check`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          answers: values,
-          solveTimeSec: elapsedSec,
-        }),
-      });
-      const data: CheckAnswersResponse = await res.json();
-      setCellResults(data.cellResults);
+  // Auto-check when all cells are filled
+  useEffect(() => {
+    if (solved || checkingRef.current) return;
 
-      if (data.solved) {
-        setSolved(true);
-        if (timerRef.current) clearInterval(timerRef.current);
-      }
-    } catch {
-      // silently fail
-    } finally {
-      setChecking(false);
-    }
-  }, [puzzle.id, values, elapsedSec]);
-
-  // Check if all cells are filled
-  const allFilled = useMemo(() => {
+    // Check if all cells are filled
+    let allFilled = true;
     for (let r = 0; r < size; r++) {
       for (let c = 0; c < size; c++) {
-        if (template[r][c] === "." && !values[r][c]) return false;
+        if (template[r][c] === "." && !values[r][c]) {
+          allFilled = false;
+          break;
+        }
       }
+      if (!allFilled) break;
     }
-    return true;
-  }, [values, template, size]);
+
+    if (!allFilled) return;
+
+    checkingRef.current = true;
+
+    fetch(`/api/puzzles/${puzzle.id}/check`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        answers: values,
+        solveTimeSec: elapsedSec,
+      }),
+    })
+      .then((res) => res.json())
+      .then((data: CheckAnswersResponse) => {
+        if (data.solved) {
+          setSolved(true);
+          if (timerRef.current) clearInterval(timerRef.current);
+        } else {
+          setIncorrect(true);
+          toast.error("Not quite right — keep trying!");
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        checkingRef.current = false;
+      });
+  }, [values, solved, size, template, puzzle.id, elapsedSec]);
 
   const formatTime = (sec: number) => {
     const m = Math.floor(sec / 60);
@@ -312,7 +319,6 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
           onOpenChange={setShowShare}
           puzzle={puzzle}
           time={elapsedSec}
-          cellResults={cellResults}
         />
       </>
     );
@@ -343,7 +349,7 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
         size={size}
         template={template}
         values={values}
-        cellResults={cellResults}
+        cellResults={null}
         activeCell={activeCell}
         activeDirection={activeDirection}
         clueNumbers={clueNumbers}
@@ -373,15 +379,12 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
         </div>
       )}
 
-      {/* Check button */}
-      <Button
-        onClick={handleCheck}
-        disabled={!allFilled || checking}
-        className="w-full max-w-xs bg-crossy-ink text-crossy-cream hover:bg-crossy-ink/90 font-sans font-semibold tracking-wide"
-        size="lg"
-      >
-        {checking ? "Checking..." : "Check Puzzle"}
-      </Button>
+      {/* Incorrect message */}
+      {incorrect && (
+        <p className="font-sans text-sm text-crossy-ink/50 text-center animate-in fade-in">
+          Something&apos;s not right — keep trying!
+        </p>
+      )}
 
       {/* Clue lists */}
       <ClueList
