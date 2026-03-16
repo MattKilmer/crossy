@@ -18,7 +18,11 @@ export default function Home() {
       <PuzzleForm />
 
       {/* Footer */}
-      <footer className="mt-16 text-center" />
+      <footer className="mt-16 text-center">
+        <p className="font-sans text-xs text-crossy-ink/25">
+          Each puzzle is uniquely generated
+        </p>
+      </footer>
     </main>
   );
 }
