@@ -45,7 +45,7 @@ export function RecentPuzzles() {
       </div>
 
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-        {puzzles.map((p) => (
+        {puzzles.slice(0, 8).map((p) => (
           <Link
             key={p.id}
             href={`/puzzle/${p.id}`}
@@ -77,6 +77,16 @@ export function RecentPuzzles() {
             </div>
           </Link>
         ))}
+      </div>
+
+      {/* See more */}
+      <div className="text-center mt-4">
+        <Link
+          href="/browse"
+          className="font-sans text-xs font-medium text-crossy-ink/35 hover:text-crossy-gold transition-colors"
+        >
+          See all puzzles &rarr;
+        </Link>
       </div>
     </div>
   );
