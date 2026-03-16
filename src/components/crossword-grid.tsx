@@ -289,14 +289,11 @@ export function CrosswordGrid({
                   tabIndex={isBlack ? -1 : 0}
                   onKeyDown={(e) => handleKeyDown(e, r, c)}
                   onInput={(e) => handleInput(e, r, c)}
-                  onFocus={() => {
-                    if (
-                      !activeCell ||
-                      activeCell[0] !== r ||
-                      activeCell[1] !== c
-                    ) {
-                      onCellFocus(r, c);
-                    }
+                  onFocus={(e) => {
+                    // Prevent focus from triggering cell selection — onClick handles it.
+                    // This avoids a race where onFocus sets activeCell before onClick checks it,
+                    // making every tap look like a "same cell" tap (toggling direction).
+                    e.stopPropagation();
                   }}
                   aria-hidden="true"
                 />
