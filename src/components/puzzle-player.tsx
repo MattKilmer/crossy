@@ -134,6 +134,7 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
   const [totalSolvers, setTotalSolvers] = useState(0);
   const [showLeaveConfirm, setShowLeaveConfirm] = useState(false);
   const checkingRef = useRef(false);
+  const lastCheckedRef = useRef<string>("");
   const sessionId = useMemo(() => getSessionId(), []);
 
   // Timer (restore from saved progress)
@@ -335,7 +336,12 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
 
     if (!allFilled) return;
 
+    // Don't re-check the exact same grid (prevents repeated toasts)
+    const valuesKey = values.flat().join("");
+    if (valuesKey === lastCheckedRef.current) return;
+
     checkingRef.current = true;
+    lastCheckedRef.current = valuesKey;
 
     fetch(`/api/puzzles/${puzzle.id}/check`, {
       method: "POST",
