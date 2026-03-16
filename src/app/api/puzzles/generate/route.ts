@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       ];
     }
 
-    const baseBank = getWordBank();
+    const baseBank = getWordBank(difficulty);
 
     // Determine what word lengths we might need (union of all templates)
     const allLengths = new Set<number>();

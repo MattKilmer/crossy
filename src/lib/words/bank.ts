@@ -5,33 +5,48 @@ interface WordEntry {
   s: number;
 }
 
-// Cache the loaded + organized word bank
-let _bankByLength: Map<number, string[]> | null = null;
+// Cache per difficulty level
+const _bankCache = new Map<string, Map<number, string[]>>();
 let _scoreMap: Map<string, number> | null = null;
 
-/**
- * Get the full word bank organized by length.
- * Words within each length are sorted by score (descending).
- */
-export function getWordBank(): Map<number, string[]> {
-  if (_bankByLength) return _bankByLength;
+// Minimum score thresholds by difficulty
+// Easy: only well-known words (score >= 70)
+// Medium: include acceptable words (score >= 45)
+// Hard: include everything (score >= 1)
+const DIFFICULTY_MIN_SCORE: Record<string, number> = {
+  easy: 70,
+  medium: 45,
+  hard: 1,
+};
 
+/**
+ * Get the word bank organized by length, filtered by difficulty.
+ * Words are sorted by score (descending) — best words tried first.
+ */
+export function getWordBank(
+  difficulty: "easy" | "medium" | "hard" = "medium"
+): Map<number, string[]> {
+  const cacheKey = difficulty;
+  if (_bankCache.has(cacheKey)) return _bankCache.get(cacheKey)!;
+
+  const minScore = DIFFICULTY_MIN_SCORE[difficulty];
   const bank = new Map<number, string[]>();
   const entries = wordsData as WordEntry[];
+  const scoreMap = getScoreMap();
 
-  // Group by length
+  // Group by length, filtering by score
   for (const { w, s } of entries) {
+    if (s < minScore) continue;
     if (!bank.has(w.length)) bank.set(w.length, []);
     bank.get(w.length)!.push(w);
   }
 
   // Sort each length group by score (descending)
-  const scoreMap = getScoreMap();
   for (const [, words] of bank) {
     words.sort((a, b) => (scoreMap.get(b) ?? 50) - (scoreMap.get(a) ?? 50));
   }
 
-  _bankByLength = bank;
+  _bankCache.set(cacheKey, bank);
   return bank;
 }
 
@@ -52,13 +67,6 @@ export function getScoreMap(): Map<string, number> {
 }
 
 /**
- * Get words of a specific length, sorted by score.
- */
-export function getWordsByLength(length: number): string[] {
-  return getWordBank().get(length) ?? [];
-}
-
-/**
  * Merge topic-specific candidate words with the base bank.
  * Topic words go first (higher priority), then base bank words.
  * Deduplicates.
@@ -68,8 +76,6 @@ export function mergeWithTopicWords(
   topicWords: Map<number, string[]>
 ): Map<number, string[]> {
   const merged = new Map<number, string[]>();
-
-  // Get all lengths from both sources
   const allLengths = new Set([...baseBank.keys(), ...topicWords.keys()]);
 
   for (const length of allLengths) {
