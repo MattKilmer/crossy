@@ -26,21 +26,12 @@ export const metadata: Metadata = {
       "Pick any topic. Get a crossword. Challenge your friends. Jazz, Space, Cooking, Sports — you name it.",
     type: "website",
     siteName: "Crossy",
-    images: [
-      {
-        url: "/opengraph-image",
-        width: 1200,
-        height: 630,
-        alt: "Crossy — Mini crosswords on any topic",
-      },
-    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Crossy — Mini Crosswords on Any Topic",
     description:
       "Pick any topic. Get a crossword. Challenge your friends.",
-    images: ["/opengraph-image"],
   },
 };
 

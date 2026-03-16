@@ -1,53 +1,29 @@
 import { ImageResponse } from "next/og";
 
 export const runtime = "edge";
+export const alt = "Crossy — Mini crosswords on any topic";
+export const size = { width: 1200, height: 630 };
+export const contentType = "image/png";
 
-export async function GET() {
-  // Sample grid patterns for visual interest
-  const grids = [
-    // cross4
-    [
-      ["#", ".", ".", ".", "#"],
-      [".", ".", ".", ".", "."],
-      [".", ".", ".", ".", "."],
-      [".", ".", ".", ".", "."],
-      ["#", ".", ".", ".", "#"],
-    ],
-    // stair2
-    [
-      [".", ".", ".", ".", "#"],
-      [".", ".", ".", ".", "."],
-      [".", ".", ".", ".", "."],
-      [".", ".", ".", ".", "."],
-      ["#", ".", ".", ".", "."],
-    ],
-    // diag2
-    [
-      [".", ".", ".", ".", "."],
-      [".", "#", ".", ".", "."],
-      [".", ".", ".", ".", "."],
-      [".", ".", ".", "#", "."],
-      [".", ".", ".", ".", "."],
-    ],
-  ];
+const sampleTopics = ["Jazz", "Space", "Dogs", "Cooking", "Movies", "Sports"];
 
-  const sampleTopics = [
-    "Jazz",
-    "Space",
-    "Dogs",
-    "Cooking",
-    "Movies",
-    "Sports",
-  ];
+const grid = [
+  ["#", ".", ".", ".", "#"],
+  [".", ".", ".", ".", "."],
+  [".", ".", ".", ".", "."],
+  [".", ".", ".", ".", "."],
+  ["#", ".", ".", ".", "#"],
+];
 
-  const sampleLetters = [
-    ["", "S", "T", "A", ""],
-    ["P", "I", "A", "N", "O"],
-    ["A", "L", "I", "V", "E"],
-    ["C", "R", "A", "N", "E"],
-    ["", "L", "S", "T", ""],
-  ];
+const letters = [
+  ["", "S", "T", "A", ""],
+  ["P", "I", "A", "N", "O"],
+  ["A", "L", "I", "V", "E"],
+  ["C", "R", "A", "N", "E"],
+  ["", "L", "S", "T", ""],
+];
 
+export default function OGImage() {
   return new ImageResponse(
     (
       <div
@@ -61,7 +37,7 @@ export async function GET() {
           overflow: "hidden",
         }}
       >
-        {/* Subtle border */}
+        {/* Border frame */}
         <div
           style={{
             position: "absolute",
@@ -74,7 +50,7 @@ export async function GET() {
           }}
         />
 
-        {/* Left side: text */}
+        {/* Left: text content */}
         <div
           style={{
             flex: 1,
@@ -86,7 +62,6 @@ export async function GET() {
             gap: "16px",
           }}
         >
-          {/* Logo */}
           <div
             style={{
               fontSize: "80px",
@@ -101,7 +76,6 @@ export async function GET() {
             Crossy
           </div>
 
-          {/* Gold line */}
           <div
             style={{
               width: "48px",
@@ -111,7 +85,6 @@ export async function GET() {
             }}
           />
 
-          {/* Tagline */}
           <div
             style={{
               fontSize: "26px",
@@ -125,7 +98,6 @@ export async function GET() {
             Mini crosswords on any topic
           </div>
 
-          {/* Topic pills */}
           <div
             style={{
               display: "flex",
@@ -154,7 +126,6 @@ export async function GET() {
             ))}
           </div>
 
-          {/* CTA text */}
           <div
             style={{
               fontSize: "16px",
@@ -168,7 +139,7 @@ export async function GET() {
           </div>
         </div>
 
-        {/* Right side: grid display */}
+        {/* Right: crossword grid */}
         <div
           style={{
             width: "440px",
@@ -178,7 +149,6 @@ export async function GET() {
             position: "relative",
           }}
         >
-          {/* Main filled grid */}
           <div
             style={{
               display: "flex",
@@ -188,10 +158,10 @@ export async function GET() {
               filter: "drop-shadow(0 8px 24px rgba(0,0,0,0.08))",
             }}
           >
-            {sampleLetters.map((row, r) => (
+            {letters.map((row, r) => (
               <div key={r} style={{ display: "flex", gap: "3px" }}>
                 {row.map((cell, c) => {
-                  const isBlack = grids[0][r][c] === "#";
+                  const isBlack = grid[r][c] === "#";
                   return (
                     <div
                       key={c}
@@ -216,73 +186,9 @@ export async function GET() {
               </div>
             ))}
           </div>
-
-          {/* Background ghost grids for depth */}
-          <div
-            style={{
-              position: "absolute",
-              top: "40px",
-              right: "20px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "2px",
-              opacity: 0.08,
-              transform: "rotate(6deg) scale(0.6)",
-            }}
-          >
-            {grids[1].map((row, r) => (
-              <div key={r} style={{ display: "flex", gap: "2px" }}>
-                {row.map((cell, c) => (
-                  <div
-                    key={c}
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      backgroundColor: cell === "#" ? "#1a1a1a" : "#1a1a1a",
-                      border: cell === "#" ? "none" : "2px solid #1a1a1a",
-                      display: "flex",
-                    }}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
-
-          <div
-            style={{
-              position: "absolute",
-              bottom: "50px",
-              right: "60px",
-              display: "flex",
-              flexDirection: "column",
-              gap: "2px",
-              opacity: 0.05,
-              transform: "rotate(-8deg) scale(0.5)",
-            }}
-          >
-            {grids[2].map((row, r) => (
-              <div key={r} style={{ display: "flex", gap: "2px" }}>
-                {row.map((cell, c) => (
-                  <div
-                    key={c}
-                    style={{
-                      width: "40px",
-                      height: "40px",
-                      backgroundColor: cell === "#" ? "#1a1a1a" : "#1a1a1a",
-                      border: cell === "#" ? "none" : "2px solid #1a1a1a",
-                      display: "flex",
-                    }}
-                  />
-                ))}
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     ),
-    {
-      width: 1200,
-      height: 630,
-    }
+    { ...size }
   );
 }
