@@ -276,11 +276,8 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
 
       if (nr >= 0 && nr < size && nc >= 0 && nc < size) {
         setActiveCell([nr, nc]);
-        if (direction === "left" || direction === "right") {
-          setActiveDirection("across");
-        } else {
-          setActiveDirection("down");
-        }
+        // Don't auto-flip direction on arrow keys — keep current direction.
+        // User must intentionally toggle by tapping the same cell twice.
       }
     },
     [activeCell, size, template]
