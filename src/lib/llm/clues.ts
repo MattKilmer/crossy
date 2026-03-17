@@ -70,7 +70,7 @@ export async function generateClues(
     messages: [
       {
         role: "user",
-        content: `Write crossword clues for a "${req.topic}"-themed mini crossword puzzle.
+        content: `Write crossword clues for a mini crossword puzzle. The puzzle's theme is "${req.topic}".
 
 Tone: ${req.tone}. ${TONE_GUIDE[req.tone] || TONE_GUIDE.standard}
 Difficulty: ${req.difficulty}. ${DIFFICULTY_CLUE_GUIDE[req.difficulty]}
@@ -79,8 +79,8 @@ Words to write clues for:
 ${wordList}
 
 Rules:
+- IMPORTANT: Only write theme-related clues for words that NATURALLY connect to "${req.topic}". Most words in a crossword are just normal fill — give those standard, straightforward clues with no forced topic connection. Do NOT shoehorn the theme into every clue. A good themed crossword has 2-4 themed clues and the rest are normal.
 - Each clue must uniquely and fairly identify its answer
-- Try to relate clues to the topic "${req.topic}" when possible, but if a word doesn't relate to the topic, write a good general clue instead
 - Keep clues concise (under 60 characters preferred, 80 max)
 - CRITICAL: The answer word must NOT appear as a standalone word in the clue. For example, if the answer is "BOP", do not write "Bebop style" — the word BOP is visible inside it. However, compound words where the answer is buried are okay.
 - Each clue should be solvable — no impossible references
