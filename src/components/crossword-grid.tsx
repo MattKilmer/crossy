@@ -100,9 +100,8 @@ export function CrosswordGrid({
           e.preventDefault();
           if (values[row][col]) {
             onCellChange(row, col, "");
-          } else {
-            onRetreat();
           }
+          onRetreat();
           break;
         case "Delete":
           e.preventDefault();
