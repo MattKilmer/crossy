@@ -23,12 +23,6 @@ export function DailyPuzzle() {
 
   if (loading || !daily) return null;
 
-  const today = new Date().toLocaleDateString("en-US", {
-    weekday: "long",
-    month: "long",
-    day: "numeric",
-  });
-
   return (
     <Link
       href={`/puzzle/${daily.id}`}

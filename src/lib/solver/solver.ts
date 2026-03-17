@@ -1,13 +1,10 @@
 import type {
   GridTemplate,
-  Slot,
-  Intersection,
   PuzzleSolution,
   SolverConfig,
-  DEFAULT_SOLVER_CONFIG,
 } from "./types";
 import { extractSlots, findIntersections, buildSlotIntersections } from "./extract";
-import { buildCrossIndex, filterCandidates, type CrossIndex } from "./cross-index";
+import { buildCrossIndex, filterCandidates } from "./cross-index";
 import { scoreSolution } from "./score";
 
 const DEFAULTS: SolverConfig = {
@@ -115,17 +112,13 @@ export function solve(
    * Returns saved domains for undo, or null if a domain became empty (contradiction).
    */
   function propagate(
-    slotId: number,
-    word: string
+    slotId: number
   ): Map<number, string[]> | null {
     const saved = new Map<number, string[]>();
     const ixs = slotIxMap.get(slotId) ?? [];
 
     for (const ix of ixs) {
-      const isA = ix.slotA === slotId;
-      const otherId = isA ? ix.slotB : ix.slotA;
-      const otherPos = isA ? ix.posB : ix.posA;
-      const myPos = isA ? ix.posA : ix.posB;
+      const otherId = ix.slotA === slotId ? ix.slotB : ix.slotA;
 
       // Skip already-assigned slots
       if (assignment.has(otherId)) continue;
@@ -200,7 +193,7 @@ export function solve(
       usedWords.add(word);
 
       // Propagate constraints
-      const saved = propagate(slotId, word);
+      const saved = propagate(slotId);
 
       if (saved !== null) {
         // No contradiction — recurse

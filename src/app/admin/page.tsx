@@ -1,6 +1,7 @@
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { puzzles, puzzleAttempts, subscribers } from "@/lib/db/schema";
-import { desc, sql, eq } from "drizzle-orm";
+import { desc, sql } from "drizzle-orm";
 import type { ClueData } from "@/lib/solver/types";
 
 import type { Metadata } from "next";
@@ -89,12 +90,12 @@ export default async function AdminPage() {
             Puzzle analytics and answer keys
           </p>
         </div>
-        <a
+        <Link
           href="/"
           className="text-sm text-crossy-gold hover:underline"
         >
           Back to app
-        </a>
+        </Link>
       </div>
 
       {/* Overview stats */}

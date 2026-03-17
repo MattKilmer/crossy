@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { puzzles } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { TEMPLATES_5x5 } from "@/lib/solver/templates";
 import { extractSlots } from "@/lib/solver/extract";
 import { solve } from "@/lib/solver/solver";

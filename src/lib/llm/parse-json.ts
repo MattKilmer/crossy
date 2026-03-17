@@ -22,16 +22,12 @@ export function extractJSON<T = unknown>(text: string): T {
 
   // Determine if it starts with { or [
   let start: number;
-  let endChar: string;
   if (firstBrace === -1) {
     start = firstBracket;
-    endChar = "]";
   } else if (firstBracket === -1) {
     start = firstBrace;
-    endChar = "}";
   } else {
     start = Math.min(firstBrace, firstBracket);
-    endChar = start === firstBrace ? "}" : "]";
   }
 
   // Find the matching closing brace/bracket

@@ -5,6 +5,28 @@ import { Button } from "@/components/ui/button";
 import { toast } from "sonner";
 import type { PuzzleResponse } from "@/lib/types";
 
+// Pre-compute confetti particle data to avoid Math.random() during render
+function generateConfettiData(count: number) {
+  const colors = [
+    "#c9a84c", "#3b82f6", "#10b981", "#f59e0b",
+    "#ef4444", "#8b5cf6", "#ec4899", "#14b8a6",
+  ];
+  return Array.from({ length: count }, (_, i) => {
+    const size = 4 + Math.random() * 8;
+    const isRect = Math.random() > 0.5;
+    return {
+      left: `${Math.random() * 100}%`,
+      width: `${size}px`,
+      height: isRect ? `${size * 2}px` : `${size}px`,
+      color: colors[i % colors.length],
+      borderRadius: isRect ? "1px" : "50%",
+      duration: `${2 + Math.random() * 2.5}s`,
+      delay: `${Math.random() * 1}s`,
+      rotation: `${Math.random() * 360}deg`,
+    };
+  });
+}
+
 interface CompletionScreenProps {
   puzzle: PuzzleResponse;
   time: number;
@@ -36,11 +58,11 @@ export function CompletionScreen({
   onShare,
   onNewPuzzle,
 }: CompletionScreenProps) {
-  const [showConfetti, setShowConfetti] = useState(false);
+  const [showConfetti, setShowConfetti] = useState(true);
   const [animateIn, setAnimateIn] = useState(false);
+  const confettiData = useMemo(() => generateConfettiData(50), []);
 
   useEffect(() => {
-    setShowConfetti(true);
     requestAnimationFrame(() => setAnimateIn(true));
     const t = setTimeout(() => setShowConfetti(false), 4000);
     return () => clearTimeout(t);
@@ -69,42 +91,28 @@ export function CompletionScreen({
       {/* Confetti */}
       {showConfetti && (
         <div className="fixed inset-0 pointer-events-none overflow-hidden z-50">
-          {Array.from({ length: 50 }).map((_, i) => {
-            const colors = [
-              "#c9a84c",
-              "#3b82f6",
-              "#10b981",
-              "#f59e0b",
-              "#ef4444",
-              "#8b5cf6",
-              "#ec4899",
-              "#14b8a6",
-            ];
-            const size = 4 + Math.random() * 8;
-            const isRect = Math.random() > 0.5;
-            return (
-              <div
-                key={i}
-                style={{
-                  position: "absolute",
-                  left: `${Math.random() * 100}%`,
-                  top: "-10px",
-                  width: `${size}px`,
-                  height: isRect ? `${size * 2}px` : `${size}px`,
-                  backgroundColor: colors[i % colors.length],
-                  borderRadius: isRect ? "1px" : "50%",
-                  animation: `confetti-fall ${2 + Math.random() * 2.5}s ease-in forwards`,
-                  animationDelay: `${Math.random() * 1}s`,
-                  transform: `rotate(${Math.random() * 360}deg)`,
-                }}
-              />
-            );
-          })}
+          {confettiData.map((p, i) => (
+            <div
+              key={i}
+              style={{
+                position: "absolute",
+                left: p.left,
+                top: "-10px",
+                width: p.width,
+                height: p.height,
+                backgroundColor: p.color,
+                borderRadius: p.borderRadius,
+                animation: `confetti-fall ${p.duration} ease-in forwards`,
+                animationDelay: p.delay,
+                transform: `rotate(${p.rotation})`,
+              }}
+            />
+          ))}
           <style>{`
             @keyframes confetti-fall {
               0% { transform: translateY(0) rotate(0deg) scale(1); opacity: 1; }
               50% { opacity: 1; }
-              100% { transform: translateY(100vh) rotate(${720 + Math.random() * 360}deg) scale(0.5); opacity: 0; }
+              100% { transform: translateY(100vh) rotate(720deg) scale(0.5); opacity: 0; }
             }
           `}</style>
         </div>

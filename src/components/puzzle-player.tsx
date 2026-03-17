@@ -9,7 +9,7 @@ import { ShareDialog } from "./share-dialog";
 import { Leaderboard } from "./leaderboard";
 import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
-import type { PuzzleResponse, PuzzleClue, CheckAnswersResponse } from "@/lib/types";
+import type { PuzzleResponse, CheckAnswersResponse } from "@/lib/types";
 
 function getSessionId(): string {
   if (typeof window === "undefined") return "";
@@ -123,7 +123,14 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
     savedProgress?.values ??
     Array.from({ length: size }, () => Array(size).fill(""))
   );
-  const [activeCell, setActiveCell] = useState<[number, number] | null>(null);
+  const [activeCell, setActiveCell] = useState<[number, number] | null>(() => {
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        if (template[r][c] === ".") return [r, c];
+      }
+    }
+    return null;
+  });
   const [activeDirection, setActiveDirection] = useState<"across" | "down">(
     "across"
   );
@@ -176,17 +183,7 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
     return () => window.removeEventListener("beforeunload", handler);
   }, [solved, hasProgress]);
 
-  // Auto-select first cell
-  useEffect(() => {
-    for (let r = 0; r < size; r++) {
-      for (let c = 0; c < size; c++) {
-        if (template[r][c] === ".") {
-          setActiveCell([r, c]);
-          return;
-        }
-      }
-    }
-  }, [template, size]);
+  // (initial cell selection handled by useState initializer above)
 
   // Get the active clue number
   const activeClueNumber = useMemo(() => {
