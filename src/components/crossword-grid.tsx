@@ -46,15 +46,14 @@ export function CrosswordGrid({
   onMoveDirection,
   onNextWord,
 }: CrosswordGridProps) {
-  const inputRefs = useRef<(HTMLInputElement | null)[][]>(
-    Array.from({ length: size }, () => Array(size).fill(null))
-  );
+  // Single hidden input for keyboard capture — positioned off-screen
+  // so iOS never shows paste/autofill on grid cells (which are plain divs)
+  const hiddenInputRef = useRef<HTMLInputElement | null>(null);
 
-  // Focus the active cell's input when it changes
+  // Focus the hidden input when active cell changes
   useEffect(() => {
     if (activeCell && !disabled) {
-      const [r, c] = activeCell;
-      inputRefs.current[r]?.[c]?.focus();
+      hiddenInputRef.current?.focus();
     }
   }, [activeCell, disabled]);
 
@@ -76,8 +75,9 @@ export function CrosswordGrid({
   const activeWordCells = getActiveWordCells();
 
   const handleKeyDown = useCallback(
-    (e: React.KeyboardEvent, row: number, col: number) => {
-      if (disabled) return;
+    (e: React.KeyboardEvent) => {
+      if (disabled || !activeCell) return;
+      const [row, col] = activeCell;
 
       switch (e.key) {
         case "ArrowUp":
@@ -110,9 +110,7 @@ export function CrosswordGrid({
           break;
         case "Tab":
           e.preventDefault();
-          if (e.shiftKey) {
-            // Could implement previous word
-          } else {
+          if (!e.shiftKey) {
             onNextWord();
           }
           break;
@@ -121,7 +119,6 @@ export function CrosswordGrid({
           onDirectionToggle();
           break;
         default:
-          // Letter input
           if (e.key.length === 1 && /^[a-zA-Z]$/.test(e.key)) {
             e.preventDefault();
             onCellChange(row, col, e.key.toUpperCase());
@@ -132,6 +129,7 @@ export function CrosswordGrid({
     },
     [
       disabled,
+      activeCell,
       values,
       onCellChange,
       onAdvance,
@@ -140,6 +138,23 @@ export function CrosswordGrid({
       onDirectionToggle,
       onNextWord,
     ]
+  );
+
+  // Handle mobile IME input on the hidden input
+  const handleInput = useCallback(
+    (e: React.FormEvent<HTMLInputElement>) => {
+      if (disabled || !activeCell) return;
+      const [row, col] = activeCell;
+      const target = e.target as HTMLInputElement;
+      const value = target.value;
+      if (value && /[a-zA-Z]/.test(value)) {
+        const letter = value.slice(-1).toUpperCase();
+        onCellChange(row, col, letter);
+        onAdvance();
+      }
+      target.value = "";
+    },
+    [disabled, activeCell, onCellChange, onAdvance]
   );
 
   const handleCellClick = useCallback(
@@ -152,43 +167,26 @@ export function CrosswordGrid({
       } else {
         onCellFocus(row, col);
       }
+
+      // Focus hidden input to capture keyboard
+      hiddenInputRef.current?.focus();
     },
     [disabled, template, activeCell, onCellFocus, onDirectionToggle]
-  );
-
-  // Handle mobile input (IME, etc.)
-  const handleInput = useCallback(
-    (e: React.FormEvent<HTMLInputElement>, row: number, col: number) => {
-      if (disabled) return;
-      const target = e.target as HTMLInputElement;
-      const value = target.value;
-      if (value && /[a-zA-Z]/.test(value)) {
-        const letter = value.slice(-1).toUpperCase();
-        onCellChange(row, col, letter);
-        onAdvance();
-      }
-      // Always clear the input value — we manage display separately
-      target.value = "";
-    },
-    [disabled, onCellChange, onAdvance]
   );
 
   const getCellBg = (row: number, col: number): string => {
     if (template[row][col] === "#") return "bg-crossy-ink";
 
-    // Check results (after checking answers)
     if (cellResults) {
       const result = cellResults[row]?.[col];
       if (result === "correct") return "bg-crossy-correct";
       if (result === "incorrect") return "bg-crossy-incorrect";
     }
 
-    // Active cell
     if (activeCell && activeCell[0] === row && activeCell[1] === col) {
       return "bg-crossy-focus/20";
     }
 
-    // Active word highlight
     if (activeWordCells.has(`${row},${col}`)) {
       return "bg-crossy-active";
     }
@@ -204,119 +202,106 @@ export function CrosswordGrid({
   };
 
   return (
-    <div
-      className="inline-grid select-none"
-      style={{
-        gridTemplateColumns: `repeat(${size}, 1fr)`,
-        gap: 0,
-        width: `min(calc(100vw - 2rem), ${size * 64}px)`,
-        height: `min(calc(100vw - 2rem), ${size * 64}px)`,
-        border: "2.5px solid var(--color-crossy-ink)",
-      }}
-      role="grid"
-      aria-label="Crossword puzzle grid"
-    >
-      {template.map((row, r) =>
-        row.map((cell, c) => {
-          const isBlack = cell === "#";
-          const clueNum = clueNumbers.get(`${r},${c}`);
-          const letter = values[r]?.[c] || "";
-
-          return (
-            <div
-              key={`${r}-${c}`}
-              className={cn(
-                "relative flex items-center justify-center",
-                "border-[1.5px] border-crossy-border/30",
-                "transition-colors duration-100",
-                getCellBg(r, c),
-                getCellBorder(r, c),
-                isBlack && "cursor-default",
-                !isBlack && !disabled && "cursor-pointer"
-              )}
-              style={{ aspectRatio: "1" }}
-              onClick={() => handleCellClick(r, c)}
-              role="gridcell"
-              aria-label={
-                isBlack
-                  ? "Black cell"
-                  : `Row ${r + 1}, Column ${c + 1}${clueNum ? `, number ${clueNum}` : ""}`
-              }
-            >
-              {/* Clue number */}
-              {clueNum && !isBlack && (
-                <span
-                  className="absolute font-sans font-semibold text-crossy-ink/70 leading-none pointer-events-none select-none"
-                  style={{
-                    top: "2px",
-                    left: "3px",
-                    fontSize: "clamp(8px, 1.8vw, 11px)",
-                  }}
-                >
-                  {clueNum}
-                </span>
-              )}
-
-              {/* Letter display */}
-              {!isBlack && letter && (
-                <span
-                  className="font-serif text-crossy-ink leading-none pointer-events-none select-none"
-                  style={{
-                    fontSize: "clamp(18px, 5.5vw, 32px)",
-                    marginTop: "2px",
-                  }}
-                >
-                  {letter}
-                </span>
-              )}
-
-              {/* Hidden input for keyboard capture */}
-              {!isBlack && !disabled && (
-                <input
-                  ref={(el) => {
-                    inputRefs.current[r][c] = el;
-                  }}
-                  className="crossword-cell-input absolute inset-0 w-full h-full cursor-pointer text-transparent caret-transparent bg-transparent"
-                  style={{ fontSize: "16px", WebkitTextFillColor: "transparent" }}
-                  type="text"
-                  inputMode="text"
-                  enterKeyHint="next"
-                  autoComplete="off"
-                  autoCorrect="off"
-                  autoCapitalize="characters"
-                  spellCheck={false}
-                  maxLength={2}
-                  data-form-type="other"
-                  data-lpignore="true"
-                  data-1p-ignore="true"
-                  onContextMenu={(e) => e.preventDefault()}
-                  onSelect={(e) => {
-                    // Prevent text selection which triggers paste/autofill on iOS
-                    const target = e.target as HTMLInputElement;
-                    target.selectionStart = target.selectionEnd = 0;
-                  }}
-                  onTouchEnd={(e) => {
-                    // Prevent iOS double-tap paste/autofill callout
-                    e.preventDefault();
-                    (e.target as HTMLInputElement).focus();
-                    handleCellClick(r, c);
-                  }}
-                  tabIndex={isBlack ? -1 : 0}
-                  onKeyDown={(e) => handleKeyDown(e, r, c)}
-                  onInput={(e) => handleInput(e, r, c)}
-                  onFocus={(e) => {
-                    // Prevent focus from triggering cell selection — onClick handles it.
-                    // This avoids a race where onFocus sets activeCell before onClick checks it,
-                    // making every tap look like a "same cell" tap (toggling direction).
-                    e.stopPropagation();
-                  }}
-                  aria-hidden="true"
-                />
-              )}
-            </div>
-          );
-        })
+    <div className="relative inline-block">
+      {/* Hidden off-screen input for keyboard capture */}
+      {!disabled && (
+        <input
+          ref={hiddenInputRef}
+          className="crossword-cell-input"
+          style={{
+            position: "absolute",
+            left: "-9999px",
+            top: "-9999px",
+            width: "1px",
+            height: "1px",
+            opacity: 0,
+            fontSize: "16px",
+          }}
+          type="text"
+          inputMode="text"
+          enterKeyHint="next"
+          autoComplete="off"
+          autoCorrect="off"
+          autoCapitalize="characters"
+          spellCheck={false}
+          onKeyDown={handleKeyDown}
+          onInput={handleInput}
+          aria-hidden="true"
+          tabIndex={-1}
+        />
       )}
+
+      {/* Grid */}
+      <div
+        className="inline-grid select-none"
+        style={{
+          gridTemplateColumns: `repeat(${size}, 1fr)`,
+          gap: 0,
+          width: `min(calc(100vw - 2rem), ${size * 64}px)`,
+          height: `min(calc(100vw - 2rem), ${size * 64}px)`,
+          border: "2.5px solid var(--color-crossy-ink)",
+        }}
+        role="grid"
+        aria-label="Crossword puzzle grid"
+      >
+        {template.map((row, r) =>
+          row.map((cell, c) => {
+            const isBlack = cell === "#";
+            const clueNum = clueNumbers.get(`${r},${c}`);
+            const letter = values[r]?.[c] || "";
+
+            return (
+              <div
+                key={`${r}-${c}`}
+                className={cn(
+                  "relative flex items-center justify-center",
+                  "border-[1.5px] border-crossy-border/30",
+                  "transition-colors duration-100",
+                  getCellBg(r, c),
+                  getCellBorder(r, c),
+                  isBlack && "cursor-default",
+                  !isBlack && !disabled && "cursor-pointer"
+                )}
+                style={{ aspectRatio: "1" }}
+                onClick={() => handleCellClick(r, c)}
+                role="gridcell"
+                aria-label={
+                  isBlack
+                    ? "Black cell"
+                    : `Row ${r + 1}, Column ${c + 1}${clueNum ? `, number ${clueNum}` : ""}`
+                }
+              >
+                {/* Clue number */}
+                {clueNum && !isBlack && (
+                  <span
+                    className="absolute font-sans font-semibold text-crossy-ink/70 leading-none pointer-events-none select-none"
+                    style={{
+                      top: "2px",
+                      left: "3px",
+                      fontSize: "clamp(8px, 1.8vw, 11px)",
+                    }}
+                  >
+                    {clueNum}
+                  </span>
+                )}
+
+                {/* Letter display */}
+                {!isBlack && letter && (
+                  <span
+                    className="font-serif text-crossy-ink leading-none pointer-events-none select-none"
+                    style={{
+                      fontSize: "clamp(18px, 5.5vw, 32px)",
+                      marginTop: "2px",
+                    }}
+                  >
+                    {letter}
+                  </span>
+                )}
+              </div>
+            );
+          })
+        )}
+      </div>
     </div>
   );
 }
