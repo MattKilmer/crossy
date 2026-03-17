@@ -3,7 +3,14 @@ import { puzzles, puzzleAttempts, subscribers } from "@/lib/db/schema";
 import { desc, sql, eq } from "drizzle-orm";
 import type { ClueData } from "@/lib/solver/types";
 
+import type { Metadata } from "next";
+
 export const dynamic = "force-dynamic";
+
+export const metadata: Metadata = {
+  title: "Admin | Crossy",
+  robots: { index: false, follow: false },
+};
 
 export default async function AdminPage() {
   // Aggregate stats

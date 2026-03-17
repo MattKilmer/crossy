@@ -16,22 +16,52 @@ const sans = IBM_Plex_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Crossy — Mini Crosswords on Any Topic",
+  title: {
+    default: "Crossy — Mini Crosswords on Any Topic",
+    template: "%s | Crossy",
+  },
   description:
     "Generate and play mini crosswords about anything. Pick a topic, solve the puzzle, challenge your friends.",
   metadataBase: new URL("https://crossygame.app"),
+  alternates: {
+    canonical: "/",
+  },
+  keywords: [
+    "crossword",
+    "mini crossword",
+    "crossword puzzle",
+    "word game",
+    "puzzle game",
+    "daily crossword",
+    "crossword generator",
+    "topic crossword",
+  ],
+  authors: [{ name: "Crossy", url: "https://crossygame.app" }],
+  creator: "Crossy",
+  manifest: "/manifest.json",
   openGraph: {
     title: "Crossy — Mini Crosswords on Any Topic",
     description:
       "Pick any topic. Get a crossword. Challenge your friends. Jazz, Space, Cooking, Sports — you name it.",
     type: "website",
     siteName: "Crossy",
+    locale: "en_US",
   },
   twitter: {
     card: "summary_large_image",
     title: "Crossy — Mini Crosswords on Any Topic",
     description:
       "Pick any topic. Get a crossword. Challenge your friends.",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
 };
 

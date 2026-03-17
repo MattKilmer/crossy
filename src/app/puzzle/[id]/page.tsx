@@ -101,8 +101,25 @@ export default async function PuzzlePage({ params }: PageProps) {
     playCount: p.playCount,
   };
 
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "Game",
+    name: `${p.topic} Crossword`,
+    description: `A mini crossword puzzle about ${p.topic}. ${p.difficulty} difficulty.`,
+    url: `https://crossygame.app/puzzle/${p.id}`,
+    image: `https://crossygame.app/puzzle/${p.id}/opengraph-image`,
+    datePublished: p.createdAt.toISOString(),
+    creator: { "@type": "Organization", name: "Crossy", url: "https://crossygame.app" },
+    genre: "Crossword Puzzle",
+    numberOfPlayers: { "@type": "QuantitativeValue", value: 1 },
+  };
+
   return (
     <main className="min-h-screen paper-texture py-4">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <PuzzlePlayer puzzle={puzzle} />
     </main>
   );
