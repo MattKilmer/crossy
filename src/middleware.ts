@@ -1,42 +1,42 @@
 import { NextRequest, NextResponse } from "next/server";
 
 export function middleware(request: NextRequest) {
-  // Protect admin routes
-  if (request.nextUrl.pathname.startsWith("/admin") ||
-      request.nextUrl.pathname.startsWith("/api/admin")) {
-    const secret = process.env.ADMIN_SECRET;
-    if (!secret) {
-      // No secret configured — block admin entirely in production
-      if (process.env.NODE_ENV === "production") {
-        return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-      }
-      return NextResponse.next();
-    }
+  const secret = process.env.ADMIN_SECRET;
 
-    // Check query param, cookie, or Authorization header
-    const provided =
-      request.nextUrl.searchParams.get("secret") ??
-      request.cookies.get("crossy_admin")?.value ??
-      request.headers.get("authorization")?.replace("Bearer ", "");
-
-    if (provided !== secret) {
+  // No secret configured — block in production, allow in dev
+  if (!secret) {
+    if (process.env.NODE_ENV === "production") {
       if (request.nextUrl.pathname.startsWith("/api/")) {
         return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
       }
-      // For page routes, redirect to homepage
       return NextResponse.redirect(new URL("/", request.url));
     }
+    return NextResponse.next();
+  }
 
-    // Set cookie so subsequent requests don't need ?secret param
-    const response = NextResponse.next();
-    if (request.nextUrl.searchParams.get("secret") && !request.cookies.get("crossy_admin")) {
-      response.cookies.set("crossy_admin", secret, {
-        httpOnly: true,
-        secure: true,
-        sameSite: "lax",
-        maxAge: 60 * 60 * 24 * 7, // 7 days
-      });
+  // Check all auth sources
+  const fromQuery = request.nextUrl.searchParams.get("secret");
+  const fromCookie = request.cookies.get("crossy_admin")?.value;
+  const fromHeader = request.headers.get("authorization")?.replace("Bearer ", "");
+  const provided = fromQuery ?? fromCookie ?? fromHeader;
+
+  if (provided !== secret) {
+    if (request.nextUrl.pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
+    return NextResponse.redirect(new URL("/", request.url));
+  }
+
+  // If authenticated via query param, set cookie and redirect to clean URL
+  if (fromQuery === secret) {
+    const cleanUrl = new URL(request.nextUrl.pathname, request.url);
+    const response = NextResponse.redirect(cleanUrl);
+    response.cookies.set("crossy_admin", secret, {
+      httpOnly: true,
+      secure: true,
+      sameSite: "lax",
+      maxAge: 60 * 60 * 24 * 7,
+    });
     return response;
   }
 
