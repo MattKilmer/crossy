@@ -236,7 +236,7 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
     const [ar, ac] = activeCell;
     const idx = slot.cells.findIndex(([r, c]) => r === ar && c === ac);
 
-    // Skip over already-filled cells to the next empty one
+    // Skip over already-filled cells to the next empty one in this word
     for (let i = idx + 1; i < slot.cells.length; i++) {
       const [nr, nc] = slot.cells[i];
       if (!values[nr][nc]) {
@@ -245,11 +245,34 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
       }
     }
 
-    // If no empty cell ahead, just move to the next cell (or stay at end)
-    if (idx < slot.cells.length - 1) {
-      setActiveCell(slot.cells[idx + 1]);
+    // Word is fully filled — auto-advance to the next word with empty cells
+    const sameDir = slots.filter((s) => s.direction === activeDirection);
+    const slotIdx = sameDir.findIndex((s) => s.number === slot.number);
+    for (let i = 1; i <= sameDir.length; i++) {
+      const nextSlot = sameDir[(slotIdx + i) % sameDir.length];
+      const emptyCell = nextSlot.cells.find(
+        ([r, c]) => !values[r][c]
+      );
+      if (emptyCell) {
+        setActiveCell(emptyCell);
+        return;
+      }
     }
-  }, [activeCell, getActiveSlot, values]);
+
+    // All words in this direction are full — try the other direction
+    const otherDir = activeDirection === "across" ? "down" : "across";
+    const otherSlots = slots.filter((s) => s.direction === otherDir);
+    for (const nextSlot of otherSlots) {
+      const emptyCell = nextSlot.cells.find(
+        ([r, c]) => !values[r][c]
+      );
+      if (emptyCell) {
+        setActiveDirection(otherDir);
+        setActiveCell(emptyCell);
+        return;
+      }
+    }
+  }, [activeCell, activeDirection, getActiveSlot, values, slots]);
 
   const handleRetreat = useCallback(() => {
     const slot = getActiveSlot();
