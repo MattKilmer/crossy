@@ -290,6 +290,17 @@ export function CrosswordGrid({
                   data-lpignore="true"
                   data-1p-ignore="true"
                   onContextMenu={(e) => e.preventDefault()}
+                  onSelect={(e) => {
+                    // Prevent text selection which triggers paste/autofill on iOS
+                    const target = e.target as HTMLInputElement;
+                    target.selectionStart = target.selectionEnd = 0;
+                  }}
+                  onTouchEnd={(e) => {
+                    // Prevent iOS double-tap paste/autofill callout
+                    e.preventDefault();
+                    (e.target as HTMLInputElement).focus();
+                    handleCellClick(r, c);
+                  }}
                   tabIndex={isBlack ? -1 : 0}
                   onKeyDown={(e) => handleKeyDown(e, r, c)}
                   onInput={(e) => handleInput(e, r, c)}
