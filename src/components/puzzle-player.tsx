@@ -235,10 +235,21 @@ export function PuzzlePlayer({ puzzle }: PuzzlePlayerProps) {
     if (!slot || !activeCell) return;
     const [ar, ac] = activeCell;
     const idx = slot.cells.findIndex(([r, c]) => r === ar && c === ac);
+
+    // Skip over already-filled cells to the next empty one
+    for (let i = idx + 1; i < slot.cells.length; i++) {
+      const [nr, nc] = slot.cells[i];
+      if (!values[nr][nc]) {
+        setActiveCell(slot.cells[i]);
+        return;
+      }
+    }
+
+    // If no empty cell ahead, just move to the next cell (or stay at end)
     if (idx < slot.cells.length - 1) {
       setActiveCell(slot.cells[idx + 1]);
     }
-  }, [activeCell, getActiveSlot]);
+  }, [activeCell, getActiveSlot, values]);
 
   const handleRetreat = useCallback(() => {
     const slot = getActiveSlot();
