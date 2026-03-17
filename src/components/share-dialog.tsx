@@ -31,21 +31,12 @@ export function ShareDialog({
     return `${m}:${s.toString().padStart(2, "0")}`;
   };
 
-  // Build emoji grid from template (just show shape, no answers)
-  const emojiGrid = puzzle.template
-    .map((row) =>
-      row
-        .map((cell) => (cell === "#" ? "\u2B1B" : "\u2B1C"))
-        .join("")
-    )
-    .join("\n");
-
   const puzzleUrl =
     typeof window !== "undefined"
       ? `${window.location.origin}/puzzle/${puzzle.id}?t=${time}`
       : "";
 
-  const shareText = `Crossy \u2014 ${puzzle.topic}\nI solved it in ${formatTime(time)}. Can you beat my time?\n\n${emojiGrid}\n\n${puzzleUrl}`;
+  const shareText = `Crossy \u2014 ${puzzle.topic}\nI solved it in ${formatTime(time)}. Can you beat my time?\n${puzzleUrl}`;
 
   const handleCopy = async () => {
     try {
@@ -67,10 +58,10 @@ export function ShareDialog({
   const handleNativeShare = async () => {
     if (navigator.share) {
       try {
+        // Only pass text (which includes the URL) — passing both text and url
+        // causes iOS Messages to show the link twice
         await navigator.share({
-          title: `Crossy \u2014 ${puzzle.topic}`,
           text: shareText,
-          url: puzzleUrl,
         });
       } catch {
         // User cancelled share
@@ -89,7 +80,7 @@ export function ShareDialog({
 
         <div className="space-y-4">
           {/* Preview */}
-          <div className="bg-white rounded-md p-4 border border-crossy-ink/10 font-mono text-sm whitespace-pre-line text-crossy-ink/80 leading-relaxed">
+          <div className="bg-white rounded-md p-4 border border-crossy-ink/10 font-sans text-sm whitespace-pre-line text-crossy-ink/80 leading-relaxed">
             {shareText}
           </div>
 
@@ -110,16 +101,6 @@ export function ShareDialog({
                 Share
               </Button>
             )}
-          </div>
-
-          {/* Puzzle URL */}
-          <div className="text-center">
-            <p className="font-sans text-xs text-crossy-ink/40">
-              Or share the link directly:
-            </p>
-            <p className="font-mono text-xs text-crossy-gold break-all mt-1">
-              {puzzleUrl}
-            </p>
           </div>
         </div>
       </DialogContent>
