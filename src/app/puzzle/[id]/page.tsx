@@ -2,7 +2,7 @@ import { notFound } from "next/navigation";
 import { PuzzlePlayer } from "@/components/puzzle-player";
 import { db } from "@/lib/db";
 import { puzzles } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import type { PuzzleResponse, PuzzleClue } from "@/lib/types";
 import type { ClueData } from "@/lib/solver/types";
 import type { Metadata } from "next";
@@ -75,6 +75,13 @@ export default async function PuzzlePage({ params }: PageProps) {
   }
 
   const p = result[0];
+
+  // Increment play count (fire and forget)
+  db.update(puzzles)
+    .set({ playCount: sql`${puzzles.playCount} + 1` })
+    .where(eq(puzzles.id, id))
+    .then(() => {})
+    .catch(() => {});
 
   const template = (p.grid as string[][]).map((row) =>
     row.map((c) => (c === "#" ? "#" : "."))
