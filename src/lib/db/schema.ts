@@ -32,6 +32,9 @@ export const puzzles = pgTable(
     wordCount: integer("word_count").notNull(),
     generationTimeMs: integer("generation_time_ms"),
 
+    // Daily puzzle
+    dailyDate: varchar("daily_date", { length: 10 }), // "2026-03-17" or null
+
     // Stats
     playCount: integer("play_count").default(0).notNull(),
     solveCount: integer("solve_count").default(0).notNull(),

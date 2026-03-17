@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { DM_Serif_Display, IBM_Plex_Sans } from "next/font/google";
+import { Analytics } from "@vercel/analytics/next";
 import { Toaster } from "@/components/ui/sonner";
 import "./globals.css";
 
@@ -74,6 +75,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${serif.variable} ${sans.variable} antialiased`}>
         {children}
+        <Analytics />
         <Toaster position="top-center" />
       </body>
     </html>

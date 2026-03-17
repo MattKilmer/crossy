@@ -14,8 +14,8 @@ let _scoreMap: Map<string, number> | null = null;
 // Medium: include acceptable words (score >= 45)
 // Hard: include everything (score >= 1)
 const DIFFICULTY_MIN_SCORE: Record<string, number> = {
-  easy: 70,
-  medium: 45,
+  easy: 85,
+  medium: 55,
   hard: 1,
 };
 

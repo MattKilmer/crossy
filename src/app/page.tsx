@@ -1,4 +1,5 @@
 import { PuzzleForm } from "@/components/puzzle-form";
+import { DailyPuzzle } from "@/components/daily-puzzle";
 import { RecentPuzzles } from "@/components/recent-puzzles";
 
 const jsonLd = {
@@ -26,7 +27,7 @@ export default function Home() {
       />
 
       {/* Hero */}
-      <div className="flex flex-col items-center gap-2 mb-10 mt-8">
+      <div className="flex flex-col items-center gap-2 mb-6 mt-8">
         <h1 className="font-serif text-5xl sm:text-6xl tracking-tight text-crossy-ink">
           Crossy
         </h1>
@@ -35,6 +36,9 @@ export default function Home() {
         </p>
         <div className="w-12 h-0.5 bg-crossy-gold/40 mt-2" />
       </div>
+
+      {/* Daily puzzle */}
+      <DailyPuzzle />
 
       {/* Form */}
       <PuzzleForm />

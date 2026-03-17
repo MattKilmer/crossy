@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/lib/db";
 import { puzzles } from "@/lib/db/schema";
+import { sql } from "drizzle-orm";
 import { TEMPLATES_5x5 } from "@/lib/solver/templates";
 import { extractSlots } from "@/lib/solver/extract";
 import { solve } from "@/lib/solver/solver";
@@ -16,12 +17,24 @@ export async function POST(request: NextRequest) {
   const startTime = Date.now();
 
   try {
-    // Rate limiting
+    // Rate limiting — in-memory (per-instance) + DB (global)
     const ip = request.headers.get("x-forwarded-for") ?? "unknown";
     const { allowed } = checkRateLimit(ip);
     if (!allowed) {
       return NextResponse.json(
         { error: "Rate limit exceeded. Try again later." },
+        { status: 429 }
+      );
+    }
+
+    // Global DB rate limit — max 200 puzzles per hour across all users
+    const [{ count: recentCount }] = await db
+      .select({ count: sql<number>`count(*)` })
+      .from(puzzles)
+      .where(sql`${puzzles.createdAt} > now() - interval '1 hour'`);
+    if (recentCount >= 200) {
+      return NextResponse.json(
+        { error: "Too many puzzles generated recently. Try again in a few minutes." },
         { status: 429 }
       );
     }
