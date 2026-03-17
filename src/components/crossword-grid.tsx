@@ -287,7 +287,7 @@ export function CrosswordGrid({
                 {/* Letter display */}
                 {!isBlack && letter && (
                   <span
-                    className="font-serif text-crossy-ink leading-none pointer-events-none select-none"
+                    className="font-sans font-semibold text-crossy-ink leading-none pointer-events-none select-none"
                     style={{
                       fontSize: "clamp(18px, 5.5vw, 32px)",
                       marginTop: "2px",
