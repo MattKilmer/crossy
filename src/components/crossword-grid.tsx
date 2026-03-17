@@ -286,6 +286,10 @@ export function CrosswordGrid({
                   autoCapitalize="characters"
                   spellCheck={false}
                   maxLength={2}
+                  data-form-type="other"
+                  data-lpignore="true"
+                  data-1p-ignore="true"
+                  onContextMenu={(e) => e.preventDefault()}
                   tabIndex={isBlack ? -1 : 0}
                   onKeyDown={(e) => handleKeyDown(e, r, c)}
                   onInput={(e) => handleInput(e, r, c)}
