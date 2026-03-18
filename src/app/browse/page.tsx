@@ -8,7 +8,11 @@ export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Browse Puzzles",
-  description: "Browse and play mini crosswords on every topic imaginable.",
+  description:
+    "Browse and play mini crosswords on every topic imaginable — from Space to Jazz to Cooking. New puzzles added daily.",
+  alternates: {
+    canonical: "https://crossygame.app/browse",
+  },
 };
 
 export default async function BrowsePage() {

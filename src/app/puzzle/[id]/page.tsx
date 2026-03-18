@@ -43,6 +43,9 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   return {
     title: `${p.topic} Crossword`,
     description,
+    alternates: {
+      canonical: `https://crossygame.app/puzzle/${id}`,
+    },
     openGraph: {
       title: t
         ? `Can you beat ${formatTime(parseInt(t, 10))}?`

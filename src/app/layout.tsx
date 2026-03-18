@@ -22,7 +22,7 @@ export const metadata: Metadata = {
     template: "%s | Crossy",
   },
   description:
-    "Generate and play mini crosswords about anything. Pick a topic, solve the puzzle, challenge your friends.",
+    "Generate and play mini crosswords about anything — from Jazz to Space to Cooking. Pick a topic, solve the puzzle, and challenge your friends to beat your time.",
   metadataBase: new URL("https://crossygame.app"),
   alternates: {
     canonical: "/",
