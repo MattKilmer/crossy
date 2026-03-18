@@ -7,7 +7,7 @@ import type { Metadata } from "next";
 export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Browse Puzzles | Crossy",
+  title: "Browse Puzzles",
   description: "Browse and play mini crosswords on every topic imaginable.",
 };
 

@@ -23,7 +23,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
     .limit(1);
 
   if (result.length === 0) {
-    return { title: "Puzzle Not Found | Crossy" };
+    return { title: "Puzzle Not Found" };
   }
 
   const p = result[0];
@@ -41,7 +41,7 @@ export async function generateMetadata({ params, searchParams }: PageProps): Pro
   const ogImageUrl = `https://crossygame.app/puzzle/${id}/opengraph-image${timeParam}`;
 
   return {
-    title: `${p.topic} Crossword | Crossy`,
+    title: `${p.topic} Crossword`,
     description,
     openGraph: {
       title: t
