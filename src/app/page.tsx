@@ -1,5 +1,4 @@
 import { PuzzleForm } from "@/components/puzzle-form";
-import { DailyPuzzle } from "@/components/daily-puzzle";
 import { RecentPuzzles } from "@/components/recent-puzzles";
 
 const jsonLd = {
@@ -36,9 +35,6 @@ export default function Home() {
         </p>
         <div className="w-12 h-0.5 bg-crossy-gold/40 mt-2" />
       </div>
-
-      {/* Daily puzzle */}
-      <DailyPuzzle />
 
       {/* Form */}
       <PuzzleForm />
