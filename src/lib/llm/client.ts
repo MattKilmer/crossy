@@ -13,6 +13,6 @@ export function getClient(): Anthropic {
 
 // Rolling aliases, not dated snapshots — snapshots get retired and 404.
 // Opus for clue generation (quality-critical)
-export const CLUE_MODEL = "claude-opus-4-6";
+export const CLUE_MODEL = "claude-opus-4-8";
 // Sonnet for candidate generation (speed-critical)
 export const CANDIDATE_MODEL = "claude-sonnet-4-6";
