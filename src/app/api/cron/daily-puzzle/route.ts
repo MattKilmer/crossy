@@ -4,16 +4,22 @@ import { puzzles } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { TEMPLATES_5x5 } from "@/lib/solver/templates";
 import { extractSlots } from "@/lib/solver/extract";
-import { solve } from "@/lib/solver/solver";
+import { solveWithinBudget } from "@/lib/solver/solve-templates";
 import { generateCandidates } from "@/lib/llm/candidates";
 import { generateClues } from "@/lib/llm/clues";
 import { getWordBank, mergeWithTopicWords } from "@/lib/words/bank";
 import { generatePuzzleId } from "@/lib/utils";
 import { getDailyTopic } from "@/lib/daily-topics";
 
-export const maxDuration = 30;
+export const maxDuration = 120;
+
+// Wall-clock budget for the solver, leaving room for the clue-generation LLM
+// call and the DB write that follow it.
+const SOLVER_BUDGET_MS = 70_000;
 
 export async function GET(request: NextRequest) {
+  const startTime = Date.now();
+
   // Verify cron secret (Vercel sends this automatically)
   const authHeader = request.headers.get("authorization");
   if (
@@ -67,23 +73,14 @@ export async function GET(request: NextRequest) {
 
   const mergedBank = mergeWithTopicWords(baseBank, topicWords);
 
-  let solution = null;
-  let usedTemplateId = "";
-  let usedSlots = null;
-
-  for (const tpl of templateOrder) {
-    const result = solve(tpl.template, mergedBank, {
-      maxBacktracks: 15000,
-      timeoutMs: 6000,
-    });
-
-    if (result && result.score >= 40) {
-      solution = result;
-      usedTemplateId = tpl.id;
-      usedSlots = result.slots;
-      break;
-    }
-  }
+  const solved = solveWithinBudget(
+    templateOrder,
+    mergedBank,
+    startTime + SOLVER_BUDGET_MS
+  );
+  const solution = solved?.solution ?? null;
+  const usedTemplateId = solved?.templateId ?? "";
+  const usedSlots = solved?.slots ?? null;
 
   if (!solution || !usedSlots) {
     return NextResponse.json(

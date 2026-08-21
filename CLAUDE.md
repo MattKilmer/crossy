@@ -136,6 +136,6 @@ scripts/
 - No difficulty-adaptive template selection
 - Recent puzzles feed built but hidden from homepage (component exists at recent-puzzles.tsx)
 - Email capture stores to DB but no email sending service connected
-- Vercel function timeout may be 10s on Hobby plan (generation takes ~12-16s) — may need Pro plan
+- Generation takes ~13-21s; the generate + daily-cron routes set `maxDuration = 120` and cap the solver with `SOLVER_BUDGET_MS` so a hard topic returns a 422 rather than a 504
 - Admin page has no authentication
 - Fill quality depends heavily on word bank — some obscure words make it through

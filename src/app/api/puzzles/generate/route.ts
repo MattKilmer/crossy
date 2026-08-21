@@ -4,14 +4,19 @@ import { puzzles } from "@/lib/db/schema";
 import { sql } from "drizzle-orm";
 import { TEMPLATES_5x5 } from "@/lib/solver/templates";
 import { extractSlots } from "@/lib/solver/extract";
-import { solve } from "@/lib/solver/solver";
+import { solveWithinBudget } from "@/lib/solver/solve-templates";
 import { generateCandidates } from "@/lib/llm/candidates";
 import { generateClues } from "@/lib/llm/clues";
 import { getWordBank, mergeWithTopicWords } from "@/lib/words/bank";
 import { generatePuzzleId, checkRateLimit, sanitizeTopic } from "@/lib/utils";
 import type { GeneratePuzzleRequest, PuzzleClue } from "@/lib/types";
 
-export const maxDuration = 30; // Vercel function timeout
+export const maxDuration = 120; // Vercel function timeout
+
+// Wall-clock budget for the solver, leaving room for the clue-generation LLM
+// call that follows it plus the DB write. Kept well under maxDuration so a
+// hard topic returns a real 422 instead of a 504.
+const SOLVER_BUDGET_MS = 70_000;
 
 export async function POST(request: NextRequest) {
   const startTime = Date.now();
@@ -93,24 +98,15 @@ export async function POST(request: NextRequest) {
     // Merge topic words with base bank
     const mergedBank = mergeWithTopicWords(baseBank, topicWords);
 
-    // Try each template until solver succeeds
-    let solution = null;
-    let usedTemplateId = "";
-    let usedSlots = null;
-
-    for (const tpl of templateOrder) {
-      const result = solve(tpl.template, mergedBank, {
-        maxBacktracks: 15000,
-        timeoutMs: 6000,
-      });
-
-      if (result && result.score >= 40) {
-        solution = result;
-        usedTemplateId = tpl.id;
-        usedSlots = result.slots;
-        break;
-      }
-    }
+    // Try each template until solver succeeds, bounded by the time left
+    const solved = solveWithinBudget(
+      templateOrder,
+      mergedBank,
+      startTime + SOLVER_BUDGET_MS
+    );
+    const solution = solved?.solution ?? null;
+    const usedTemplateId = solved?.templateId ?? "";
+    const usedSlots = solved?.slots ?? null;
 
     if (!solution || !usedSlots) {
       return NextResponse.json(
